@@ -1,0 +1,45 @@
+@page "/shoppinglist"
+
+@inject HttpClient Http
+
+<div class="main">
+    @if (shoppingList == null)
+    {
+        <text>Loading...</text>
+    }
+    else if (!shoppingList.ShoppingItems.Any())
+    {
+        <h2>No items on shopping list</h2>
+
+    }
+    else
+    {
+        <h2>
+            Shopping List
+        </h2>
+        <ul>
+            @foreach (var item in shoppingList.ShoppingItems)
+            {
+                <li>
+
+                    @item.Quantity @item.Name
+
+                </li>
+            }
+
+        </ul>
+
+    }
+</div>
+
+@code {
+
+    ShoppingListData? shoppingList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        shoppingList = await Http.GetFromJsonAsync<ShoppingListData>(
+            "data/shoppinglist.json"
+            );
+    }
+}
