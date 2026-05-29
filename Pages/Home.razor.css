@@ -1,0 +1,53 @@
+.landing {
+    text-align: center;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.landing h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.tagline {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.description {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.features {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.feature-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 300px;
+    text-align: left;
+}
+
+.feature-card h3 {
+    margin-top: 0;
+}
+
+.feature-card a {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: #e63946;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.feature-card a:hover {
+    text-decoration: underline;
+}
