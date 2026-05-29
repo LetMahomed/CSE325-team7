@@ -1,0 +1,92 @@
+/* Remy's Recipes Theme - Ratatouille Inspired */
+
+:root {
+    --color-navy: #2b2d42;
+    --color-red: #e63946;
+    --color-cream: #f8f4ef;
+    --color-warm-gray: #8d99ae;
+    --color-dark-text: #2b2d42;
+    --color-light-text: #edf2f4;
+    --color-accent-gold: #d4a373;
+    --color-card-bg: #ffffff;
+    --color-border: #e0d8cf;
+    --font-heading: 'Merriweather', serif;
+    --font-body: 'Open Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-cream);
+    color: var(--color-dark-text);
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    color: var(--color-navy);
+}
+
+a {
+    color: var(--color-red);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+button, .btn {
+    font-family: var(--font-body);
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.btn-primary {
+    background-color: var(--color-red);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #c1121f;
+}
+
+.btn-secondary {
+    background-color: var(--color-navy);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #1d1f30;
+}
+
+input, select, textarea {
+    font-family: var(--font-body);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: white;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-accent-gold);
+    box-shadow: 0 0 0 2px rgba(212, 163, 115, 0.3);
+}
+
+.card {
+    background-color: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
