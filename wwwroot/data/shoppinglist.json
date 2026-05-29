@@ -1,0 +1,16 @@
+{
+    "shoppingItems": [
+        {
+            "id": 1,
+            "name": "Flour",
+            "quantity": 1,
+            "isChecked": false
+        },
+        {
+            "id": 2,
+            "name": "Sugar",
+            "quantity": 1,
+            "isChecked": false
+        }
+    ]
+}
