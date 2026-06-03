@@ -1,0 +1,56 @@
+@page "/recipes"
+@inject HttpClient Http
+
+<h1>Recipes</h1>
+
+@if (recipeData == null)
+{
+    <p>Loading recipes...</p>
+}
+else
+{
+    @foreach (var recipe in recipeData.Recipes)
+    {
+        <div class="recipe-card">
+            <h2>@recipe.Name</h2>
+
+            <p>
+                <strong>Category:</strong> @recipe.Category
+            </p>
+
+            <p>
+                <strong>Prep:</strong> @recipe.PrepTime |
+                <strong>Cook:</strong> @recipe.CookTime |
+                <strong>Servings:</strong> @recipe.Servings
+            </p>
+
+            <h4>Ingredients</h4>
+            <ul>
+                @foreach (var ingredient in recipe.Ingredients)
+                {
+                    <li>
+                        @ingredient.Amount @ingredient.Unit @ingredient.Name
+                    </li>
+                }
+            </ul>
+
+            <h4>Instructions</h4>
+            <ol>
+                @foreach (var step in recipe.Instructions)
+                {
+                    <li>@step</li>
+                }
+            </ol>
+        </div>
+    }
+}
+
+@code {
+    private RecipeData? recipeData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        recipeData = await Http.GetFromJsonAsync<RecipeData>(
+            "data/recipes.json");
+    }
+}
