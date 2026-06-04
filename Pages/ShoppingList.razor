@@ -1,34 +1,50 @@
 @page "/shoppinglist"
 
-@inject HttpClient Http
+@inject IJSRuntime JS
+
+@using Microsoft.JSInterop
+@using System.Text.Json
+
 
 <div class="main">
     @if (shoppingList == null)
     {
         <text>Loading...</text>
     }
-    else if (!shoppingList.ShoppingItems.Any())
-    {
-        <h2>No items on shopping list</h2>
-
-    }
     else
     {
-        <h2>
-            Shopping List
-        </h2>
-        <ul>
-            @foreach (var item in shoppingList.ShoppingItems)
-            {
-                <li>
+        <h2>Shopping List</h2>
 
-                    @item.Quantity @item.Name
+        <h3>Add an item to the list:</h3>
+        <div class=add_item>
+            <input type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" />
+            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" />
+            <button type="button" @onclick="AddItem">Add</button>
+        </div>
+        <div class=remove_items>
 
-                </li>
-            }
+            <button type="button" @onclick="RemoveItems">Delete Checked Items</button>
+        </div>
+        <p>@statusMessage</p>
 
-        </ul>
-
+        @if (!shoppingList.ShoppingItems.Any())
+        {
+            <h2>No items on shopping list</h2>
+        }
+        else
+        {
+            <ul>
+                @foreach (var item in shoppingList.ShoppingItems)
+                {
+                    <li>
+                        <label>
+                            <input type="checkbox" @bind="item.IsChecked" />
+                            @item.Quantity @item.Name
+                        </label>
+                    </li>
+                }
+            </ul>
+        }
     }
 </div>
 
@@ -36,10 +52,114 @@
 
     ShoppingListData? shoppingList;
 
+    string newItemName = "";
+    int newItemQuantity = 1;
+    string statusMessage = "";
+
     protected override async Task OnInitializedAsync()
     {
-        shoppingList = await Http.GetFromJsonAsync<ShoppingListData>(
-            "data/shoppinglist.json"
+        var savedJson = await JS.InvokeAsync<string?>(
+            "localStorage.getItem",
+            "shoppingList"
+        );
+
+        if (!string.IsNullOrWhiteSpace(savedJson))
+        {
+            shoppingList = JsonSerializer.Deserialize<ShoppingListData>(savedJson) ?? new ShoppingListData();
+            shoppingList.ShoppingItems ??= new List<ShoppingItem>();
+        }
+        else
+        {
+            shoppingList = new ShoppingListData();
+        }
+    }
+
+    async Task RemoveItems()
+    {
+        if (shoppingList == null)
+        {
+            return;
+        }
+
+        var removedCount = shoppingList.ShoppingItems.RemoveAll(item => item.IsChecked);
+
+        if (removedCount == 0)
+        {
+            statusMessage = "No checked items to remove.";
+        }
+        else
+        {
+            statusMessage = $"Removed {removedCount} item(s).";
+        }
+
+        await SaveShoppingList();
+    }
+
+    async Task AddItem()
+    {
+        var itemName = newItemName.Trim();
+
+        if (shoppingList == null || string.IsNullOrWhiteSpace(itemName))
+        {
+            statusMessage = "Enter an item name first.";
+            return;
+        }
+
+        if (newItemQuantity < 1)
+        {
+            statusMessage = "Quantity must be at least 1.";
+            return;
+        }
+
+        shoppingList.ShoppingItems.Add(new ShoppingItem
+        {
+            Id = shoppingList.ShoppingItems.Count + 1,
+            Name = itemName,
+            Quantity = newItemQuantity,
+            IsChecked = false
+        });
+
+        newItemName = "";
+        newItemQuantity = 1;
+        statusMessage = $"Added {itemName}.";
+        StateHasChanged();
+
+        await SaveShoppingList();
+    }
+
+    void UpdateNewItemName(ChangeEventArgs e)
+    {
+        newItemName = e.Value?.ToString() ?? "";
+    }
+
+    void UpdateNewItemQuantity(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var quantity) && quantity >= 1)
+        {
+            newItemQuantity = quantity;
+        }
+    }
+
+    async Task SaveShoppingList()
+    {
+        if (shoppingList == null)
+        {
+            return;
+        }
+
+        var json = JsonSerializer.Serialize(shoppingList);
+
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "localStorage.setItem",
+                "shoppingList",
+                json
             );
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Item added, but browser storage failed: {ex.Message}";
+        }
     }
 }
