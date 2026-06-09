@@ -16,15 +16,16 @@
         <h2>Shopping List</h2>
 
         <h3>Add an item to the list:</h3>
-        <div class=add_item>
+        <div class="add_item">
             <input type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" />
             <input type="text" value="@newItemName" @oninput="UpdateNewItemName" />
             <button type="button" @onclick="AddItem">Add</button>
         </div>
-        <div class=remove_items>
+        <div class="remove_items">
 
             <button type="button" @onclick="RemoveItems">Delete Checked Items</button>
         </div>
+
         <p>@statusMessage</p>
 
         @if (!shoppingList.ShoppingItems.Any())
@@ -33,14 +34,26 @@
         }
         else
         {
-            <ul>
+            <ul class="edit_item">
                 @foreach (var item in shoppingList.ShoppingItems)
                 {
-                    <li>
-                        <label>
-                            <input type="checkbox" @bind="item.IsChecked" />
-                            @item.Quantity @item.Name
-                        </label>
+                    <li @key="item">
+                        @if (editingItem == item)
+                        {
+                            <input type="number" min="1" @bind="editItemQuantity" />
+                            <input type="text" @bind="editItemName" />
+                            <button type="button" @onclick="SaveEdit">Save</button>
+                            <button type="button" @onclick="CancelEdit">Cancel</button>
+                        }
+                        else
+                        {
+                            <label>
+                                <input type="checkbox" @bind="item.IsChecked" />
+                                @item.Quantity @item.Name
+                            </label>
+
+                            <button type="button" @onclick="() => StartEdit(item)">Edit</button>
+                        }
                     </li>
                 }
             </ul>
@@ -55,6 +68,9 @@
     string newItemName = "";
     int newItemQuantity = 1;
     string statusMessage = "";
+    ShoppingItem? editingItem = null;
+    string editItemName = "";
+    int editItemQuantity = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +83,7 @@
         {
             shoppingList = JsonSerializer.Deserialize<ShoppingListData>(savedJson) ?? new ShoppingListData();
             shoppingList.ShoppingItems ??= new List<ShoppingItem>();
+            await NormalizeShoppingItemIds();
         }
         else
         {
@@ -113,7 +130,9 @@
 
         shoppingList.ShoppingItems.Add(new ShoppingItem
         {
-            Id = shoppingList.ShoppingItems.Count + 1,
+            Id = shoppingList.ShoppingItems.Any()
+                ? shoppingList.ShoppingItems.Max(item => item.Id) + 1
+                : 1,
             Name = itemName,
             Quantity = newItemQuantity,
             IsChecked = false
@@ -138,6 +157,78 @@
         {
             newItemQuantity = quantity;
         }
+    }
+
+    async Task NormalizeShoppingItemIds()
+    {
+        if (shoppingList == null)
+        {
+            return;
+        }
+
+        var nextId = 1;
+        var changedIds = false;
+
+        foreach (var item in shoppingList.ShoppingItems)
+        {
+            if (item.Id != nextId)
+            {
+                item.Id = nextId;
+                changedIds = true;
+            }
+
+            nextId++;
+        }
+
+        if (changedIds)
+        {
+            await SaveShoppingList();
+        }
+    }
+
+    void StartEdit(ShoppingItem item)
+    {
+        editingItem = item;
+        editItemName = item.Name;
+        editItemQuantity = item.Quantity;
+        statusMessage = "";
+    }
+    void CancelEdit()
+    {
+        editingItem = null;
+        editItemName = "";
+        editItemQuantity = 1;
+        statusMessage = "";
+    }
+
+    async Task SaveEdit()
+    {
+        if (editingItem == null)
+        {
+            return;
+        }
+
+        var itemName = editItemName.Trim();
+
+        if (string.IsNullOrWhiteSpace(itemName))
+        {
+            statusMessage = "Enter an item name first.";
+            return;
+        }
+
+        if (editItemQuantity < 1)
+        {
+            statusMessage = "Quantity must be at least 1.";
+            return;
+        }
+
+        editingItem.Name = itemName;
+        editingItem.Quantity = editItemQuantity;
+
+        editingItem = null;
+        statusMessage = $"Updated {itemName}.";
+
+        await SaveShoppingList();
     }
 
     async Task SaveShoppingList()
