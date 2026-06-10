@@ -1,14 +1,51 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Navigation
 
 <nav class="navbar">
     <a class="brand" href="">🐀 Remy's Recipes</a>
+
     <div class="nav-links">
         <a href="/">Home</a>
         <a href="/recipes">Recipes</a>
         <a href="/shoppinglist">Shopping List</a>
+
+        <button class="search-icon" type="button" @onclick="ToggleSearch">
+            🔍
+        </button>
+
+        @if (showSearch)
+        {
+            <form class="nav-search" @onsubmit="SearchRecipes" @onsubmit:preventDefault>
+                <input type="text" placeholder="Search recipes..." @bind="searchText" />
+            </form>
+        }
     </div>
 </nav>
 
 <main class="content">
     @Body
 </main>
+
+@code {
+    bool showSearch = false;
+    string searchText = "";
+
+    void ToggleSearch()
+    {
+        showSearch = !showSearch;
+    }
+
+    void SearchRecipes()
+    {
+        var search = searchText.Trim();
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            Navigation.NavigateTo("/recipes");
+        }
+        else
+        {
+            Navigation.NavigateTo($"/recipes?search={Uri.EscapeDataString(search)}");
+        }
+    }
+}

@@ -3,13 +3,13 @@
 
 <h1>Recipes</h1>
 
-@if (recipeData == null)
+@if (!FilteredRecipes.Any())
 {
-    <p>Loading recipes...</p>
+    <p>No recipes for "@SearchText"</p>
 }
 else
 {
-    @foreach (var recipe in recipeData.Recipes)
+    @foreach (var recipe in FilteredRecipes)
     {
         <div class="recipe-card">
             <h2>@recipe.Name</h2>
@@ -52,5 +52,29 @@ else
     {
         recipeData = await Http.GetFromJsonAsync<RecipeData>(
             "data/recipes.json");
+    }
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? SearchText { get; set; }
+
+    private IEnumerable<Recipe> FilteredRecipes
+    {
+        get
+        {
+            if (recipeData == null)
+            {
+                return Enumerable.Empty<Recipe>();
+            }
+
+            if (string.IsNullOrWhiteSpace(SearchText))
+            {
+                return recipeData.Recipes;
+            }
+
+            var search = SearchText.Trim();
+
+            return recipeData.Recipes.Where(recipe =>
+                recipe.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                recipe.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

@@ -104,6 +104,7 @@ textarea:focus {
     padding: 1rem;
     margin-bottom: 1rem;
     background: white;
+}
 
 .remove_items button {
     margin-top: 10px;
