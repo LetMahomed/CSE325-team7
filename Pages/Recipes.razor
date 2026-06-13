@@ -253,9 +253,10 @@ else
             shoppingList.ShoppingItems.Add(new ShoppingItem
             {
                 Id = nextId++,
-                Name = $"{ingredient.Amount} {ingredient.Unit} {ingredient.Name}",
+                Name = ingredient.Name,
                 Quantity = 1,
-                IsChecked = false
+                IsChecked = false,
+                RecipeRequirement = $"{ingredient.Amount} {ingredient.Unit}"
             });
         }
 

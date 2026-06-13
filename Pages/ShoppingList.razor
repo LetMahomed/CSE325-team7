@@ -5,58 +5,81 @@
 @using Microsoft.JSInterop
 @using System.Text.Json
 
-
-<div class="main">
+<div class="shopping-page">
     @if (shoppingList == null)
     {
-        <text>Loading...</text>
+        <p>Loading...</p>
     }
     else
     {
         <h2>Shopping List</h2>
 
-        <h3>Add an item to the list:</h3>
-        <div class="add_item">
-            <input type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" />
-            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" />
-            <button type="button" @onclick="AddItem">Add</button>
-        </div>
-        <div class="remove_items">
-
-            <button type="button" @onclick="RemoveItems">Delete Checked Items</button>
+        <div class="add-item-form">
+            <label>Add an item:</label>
+            <input type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" placeholder="Qty" />
+            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" placeholder="Item name" />
+            <button class="btn-primary" type="button" @onclick="AddItem">Add</button>
         </div>
 
-        <p>@statusMessage</p>
+        <div class="list-actions">
+            <button class="btn-secondary" type="button" @onclick="RemoveItems">Delete Checked Items</button>
+        </div>
+
+        @if (statusMessage != "")
+        {
+            <p class="status-message">@statusMessage</p>
+        }
 
         @if (!shoppingList.ShoppingItems.Any())
         {
-            <h2>No items on shopping list</h2>
+            <p>No items on shopping list.</p>
         }
         else
         {
-            <ul class="edit_item">
-                @foreach (var item in shoppingList.ShoppingItems)
-                {
-                    <li @key="item">
-                        @if (editingItem == item)
-                        {
-                            <input type="number" min="1" @bind="editItemQuantity" />
-                            <input type="text" @bind="editItemName" />
-                            <button type="button" @onclick="SaveEdit">Save</button>
-                            <button type="button" @onclick="CancelEdit">Cancel</button>
-                        }
-                        else
-                        {
-                            <label>
-                                <input type="checkbox" @bind="item.IsChecked" />
-                                @item.Quantity @item.Name
-                            </label>
-
-                            <button type="button" @onclick="() => StartEdit(item)">Edit</button>
-                        }
-                    </li>
-                }
-            </ul>
+            <table class="shopping-table">
+                <thead>
+                    <tr>
+                        <th class="col-check"></th>
+                        <th class="col-num">#</th>
+                        <th class="col-qty">Qty</th>
+                        <th class="col-item">Item</th>
+                        <th class="col-req">Recipe Req.</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var rowNum = 1; }
+                    @foreach (var item in shoppingList.ShoppingItems)
+                    {
+                        <tr @key="item" class="@(item.IsChecked ? "checked-row" : "")">
+                            @if (editingItem == item)
+                            {
+                                <td></td>
+                                <td>@rowNum</td>
+                                <td><input type="number" min="1" @bind="editItemQuantity" class="edit-input-qty" /></td>
+                                <td><input type="text" @bind="editItemName" class="edit-input-name" /></td>
+                                <td></td>
+                                <td class="col-actions">
+                                    <button class="btn-primary btn-sm" type="button" @onclick="SaveEdit">Save</button>
+                                    <button class="btn-secondary btn-sm" type="button" @onclick="CancelEdit">Cancel</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="col-check"><input type="checkbox" @bind="item.IsChecked" /></td>
+                                <td>@rowNum</td>
+                                <td>@item.Quantity</td>
+                                <td class="@(item.IsChecked ? "item-checked" : "")">@item.Name</td>
+                                <td class="recipe-req">@item.RecipeRequirement</td>
+                                <td class="col-actions">
+                                    <button class="btn-secondary btn-sm" type="button" @onclick="() => StartEdit(item)">Edit</button>
+                                </td>
+                            }
+                        </tr>
+                        rowNum++;
+                    }
+                </tbody>
+            </table>
         }
     }
 </div>
@@ -94,20 +117,13 @@
     async Task RemoveItems()
     {
         if (shoppingList == null)
-        {
             return;
-        }
 
         var removedCount = shoppingList.ShoppingItems.RemoveAll(item => item.IsChecked);
 
-        if (removedCount == 0)
-        {
-            statusMessage = "No checked items to remove.";
-        }
-        else
-        {
-            statusMessage = $"Removed {removedCount} item(s).";
-        }
+        statusMessage = removedCount == 0
+            ? "No checked items to remove."
+            : $"Removed {removedCount} item(s).";
 
         await SaveShoppingList();
     }
@@ -154,17 +170,13 @@
     void UpdateNewItemQuantity(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var quantity) && quantity >= 1)
-        {
             newItemQuantity = quantity;
-        }
     }
 
     async Task NormalizeShoppingItemIds()
     {
         if (shoppingList == null)
-        {
             return;
-        }
 
         var nextId = 1;
         var changedIds = false;
@@ -176,14 +188,11 @@
                 item.Id = nextId;
                 changedIds = true;
             }
-
             nextId++;
         }
 
         if (changedIds)
-        {
             await SaveShoppingList();
-        }
     }
 
     void StartEdit(ShoppingItem item)
@@ -193,6 +202,7 @@
         editItemQuantity = item.Quantity;
         statusMessage = "";
     }
+
     void CancelEdit()
     {
         editingItem = null;
@@ -204,9 +214,7 @@
     async Task SaveEdit()
     {
         if (editingItem == null)
-        {
             return;
-        }
 
         var itemName = editItemName.Trim();
 
@@ -234,19 +242,13 @@
     async Task SaveShoppingList()
     {
         if (shoppingList == null)
-        {
             return;
-        }
 
         var json = JsonSerializer.Serialize(shoppingList);
 
         try
         {
-            await JS.InvokeVoidAsync(
-                "localStorage.setItem",
-                "shoppingList",
-                json
-            );
+            await JS.InvokeVoidAsync("localStorage.setItem", "shoppingList", json);
         }
         catch (Exception ex)
         {
