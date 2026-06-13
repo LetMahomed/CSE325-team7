@@ -1,12 +1,13 @@
 @page "/recipes"
-@inject HttpClient Http
+@using CSE325_team7.Services
+@inject RecipeService RecipeService
 
 <h1>Recipes</h1>
 
 <div class="recipe-filters">
     <select @onchange="OnCategoryChanged">
         <option value="">All Categories</option>
-        @if (recipeData != null)
+        @if (recipes != null)
         {
             @foreach (var category in Categories)
             {
@@ -16,7 +17,7 @@
     </select>
 </div>
 
-@if (recipeData == null)
+@if (recipes == null)
 {
     <p>Loading...</p>
 }
@@ -61,7 +62,7 @@ else
 }
 
 @code {
-    private RecipeData? recipeData;
+    private List<Recipe>? recipes;
     private string SelectedCategory = "";
 
     [SupplyParameterFromQuery(Name = "search")]
@@ -69,12 +70,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        recipeData = await Http.GetFromJsonAsync<RecipeData>("data/recipes.json");
+        recipes = await RecipeService.GetRecipesAsync();
     }
 
     private IEnumerable<string> Categories =>
-        recipeData?.Recipes
-            .Select(r => r.Category)
+        recipes?.Select(r => r.Category)
             .Distinct()
             .OrderBy(c => c)
         ?? Enumerable.Empty<string>();
@@ -83,10 +83,10 @@ else
     {
         get
         {
-            if (recipeData == null)
+            if (recipes == null)
                 return Enumerable.Empty<Recipe>();
 
-            var results = recipeData.Recipes.AsEnumerable();
+            var results = recipes.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(SelectedCategory))
                 results = results.Where(r => r.Category == SelectedCategory);
