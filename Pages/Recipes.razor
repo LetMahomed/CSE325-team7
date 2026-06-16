@@ -1,11 +1,16 @@
 @page "/recipes"
-@inject HttpClient Http
+@using CSE325_team7.Services
+@inject RecipeService RecipeService
 
 <h1>Recipes</h1>
 
-@if (!FilteredRecipes.Any())
+@if (recipes == null)
 {
-    <p>No recipes for "@SearchText"</p>
+    <p>Loading...</p>
+}
+else if (!FilteredRecipes.Any())
+{
+    <p>No recipes found for "@SearchText"</p>
 }
 else
 {
@@ -28,9 +33,7 @@ else
             <ul>
                 @foreach (var ingredient in recipe.Ingredients)
                 {
-                    <li>
-                        @ingredient.Amount @ingredient.Unit @ingredient.Name
-                    </li>
+                    <li>@ingredient.Amount @ingredient.Unit @ingredient.Name</li>
                 }
             </ul>
 
@@ -46,35 +49,30 @@ else
 }
 
 @code {
-    private RecipeData? recipeData;
+    private List<Recipe>? recipes;
+
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? SearchText { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        recipeData = await Http.GetFromJsonAsync<RecipeData>(
-            "data/recipes.json");
+        recipes = await RecipeService.GetRecipesAsync();
     }
-    [SupplyParameterFromQuery(Name = "search")]
-    public string? SearchText { get; set; }
 
     private IEnumerable<Recipe> FilteredRecipes
     {
         get
         {
-            if (recipeData == null)
-            {
+            if (recipes == null)
                 return Enumerable.Empty<Recipe>();
-            }
 
             if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                return recipeData.Recipes;
-            }
+                return recipes;
 
             var search = SearchText.Trim();
-
-            return recipeData.Recipes.Where(recipe =>
-                recipe.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                recipe.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
+            return recipes.Where(r =>
+                r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                r.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
