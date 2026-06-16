@@ -4,13 +4,26 @@
 
 <h1>Recipes</h1>
 
+<div class="recipe-filters">
+    <select @onchange="OnCategoryChanged">
+        <option value="">All Categories</option>
+        @if (recipes != null)
+        {
+            @foreach (var category in Categories)
+            {
+                <option value="@category" selected="@(category == SelectedCategory)">@category</option>
+            }
+        }
+    </select>
+</div>
+
 @if (recipes == null)
 {
     <p>Loading...</p>
 }
 else if (!FilteredRecipes.Any())
 {
-    <p>No recipes found for "@SearchText"</p>
+    <p>No recipes found.</p>
 }
 else
 {
@@ -50,6 +63,7 @@ else
 
 @code {
     private List<Recipe>? recipes;
+    private string SelectedCategory = "";
 
     [SupplyParameterFromQuery(Name = "search")]
     public string? SearchText { get; set; }
@@ -59,6 +73,12 @@ else
         recipes = await RecipeService.GetRecipesAsync();
     }
 
+    private IEnumerable<string> Categories =>
+        recipes?.Select(r => r.Category)
+            .Distinct()
+            .OrderBy(c => c)
+        ?? Enumerable.Empty<string>();
+
     private IEnumerable<Recipe> FilteredRecipes
     {
         get
@@ -66,13 +86,25 @@ else
             if (recipes == null)
                 return Enumerable.Empty<Recipe>();
 
-            if (string.IsNullOrWhiteSpace(SearchText))
-                return recipes;
+            var results = recipes.AsEnumerable();
 
-            var search = SearchText.Trim();
-            return recipes.Where(r =>
-                r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                r.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(SelectedCategory))
+                results = results.Where(r => r.Category == SelectedCategory);
+
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                var search = SearchText.Trim();
+                results = results.Where(r =>
+                    r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    r.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return results;
         }
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        SelectedCategory = e.Value?.ToString() ?? "";
     }
 }
