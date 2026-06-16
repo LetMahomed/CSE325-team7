@@ -153,18 +153,20 @@ else
 }
 
 @code {
+    // --- State ---
     private List<Recipe>? recipes;
     private string SelectedCategory = "";
     private string statusMessage = "";
-    private int? statusRecipeId = null;
-    private int? reviewingRecipeId = null;
+    private int? statusRecipeId = null;        // Tracks which recipe card shows status message
+    private int? reviewingRecipeId = null;     // Tracks which recipe has review form open
     private int newRating = 0;
     private string newComment = "";
     private string reviewError = "";
-    private HashSet<int> addedRecipeIds = new();
+    private HashSet<int> addedRecipeIds = new(); // Recipes already added to shopping list
 
+    // --- Add/Edit form state ---
     private bool showForm = false;
-    private Recipe? editingRecipe = null;
+    private Recipe? editingRecipe = null;       // Null = adding new, non-null = editing
     private string formName = "";
     private string formCategory = "";
     private string formPrepTime = "";
@@ -174,15 +176,22 @@ else
     private string formInstructions = "";
     private string formError = "";
 
+    // Receives search text from URL query string (?search=...)
     [SupplyParameterFromQuery(Name = "search")]
     public string? SearchText { get; set; }
 
+    /// <summary>
+    /// Loads recipes on page initialization and checks which are already in shopping list.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         recipes = await RecipeService.GetRecipesAsync();
         await LoadAddedRecipeIds();
     }
 
+    /// <summary>
+    /// Checks localStorage shopping list to mark recipes whose ingredients are already added.
+    /// </summary>
     private async Task LoadAddedRecipeIds()
     {
         var json = await JS.InvokeAsync<string?>("localStorage.getItem", "shoppingList");
@@ -202,10 +211,16 @@ else
         }
     }
 
+    /// <summary>
+    /// Returns distinct recipe categories for the filter dropdown.
+    /// </summary>
     private IEnumerable<string> Categories =>
         recipes?.Select(r => r.Category).Distinct().OrderBy(c => c)
         ?? Enumerable.Empty<string>();
 
+    /// <summary>
+    /// Filters recipes by selected category and/or search text from URL query.
+    /// </summary>
     private IEnumerable<Recipe> FilteredRecipes
     {
         get
@@ -243,6 +258,10 @@ else
 
     // --- Add/Edit/Delete ---
 
+    /// <summary>
+    /// Renders the shared Add/Edit recipe form as a RenderFragment.
+    /// Used both at the top (for Add) and inline within a card (for Edit).
+    /// </summary>
     private RenderFragment RenderForm() => __builder =>
     {
         <div class="recipe-form">
@@ -359,6 +378,10 @@ else
         recipes = await RecipeService.GetRecipesAsync();
     }
 
+    /// <summary>
+    /// Parses multi-line ingredient text into structured Ingredient objects.
+    /// Supports formats: "2 cups Flour", "30 apples", or freeform text.
+    /// </summary>
     private List<Ingredient> ParseIngredients(string text)
     {
         var list = new List<Ingredient>();
@@ -384,6 +407,10 @@ else
         return list;
     }
 
+    /// <summary>
+    /// Converts raw unit strings to standardized display names with proper pluralization.
+    /// Returns "Count" for items without a unit of measurement.
+    /// </summary>
     private string FormatUnit(string unit, double amount)
     {
         if (string.IsNullOrWhiteSpace(unit)) return "Count";
@@ -440,6 +467,10 @@ else
 
     // --- Add to Shopping List ---
 
+    /// <summary>
+    /// Adds all ingredients from a recipe to the shopping list in localStorage.
+    /// Merges duplicates by summing amounts. Count items set Qty = amount; others Qty = 1.
+    /// </summary>
     private async Task AddToShoppingList(Recipe recipe)
     {
         var json = await JS.InvokeAsync<string?>("localStorage.getItem", "shoppingList");

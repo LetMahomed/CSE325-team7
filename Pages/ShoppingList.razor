@@ -92,19 +92,28 @@
 </div>
 
 @code {
-
+    // --- State ---
     ShoppingListData? shoppingList;
 
+    // Add item form state
     string newItemName = "";
     int newItemQuantity = 1;
-    string newItemUnit = "Count";
+    string newItemUnit = "Count";          // Default unit for manually added items
     string statusMessage = "";
+
+    // Inline edit state
     ShoppingItem? editingItem = null;
     string editItemName = "";
     int editItemQuantity = 1;
+
+    // Sort state (defaults to alphabetical by item name)
     string sortColumn = "item";
     bool sortAscending = true;
 
+    /// <summary>
+    /// Loads shopping list from localStorage on page init.
+    /// Creates empty list if nothing saved.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         var savedJson = await JS.InvokeAsync<string?>(
@@ -124,6 +133,9 @@
         }
     }
 
+    /// <summary>
+    /// Removes all checked items from the list and persists changes.
+    /// </summary>
     async Task RemoveItems()
     {
         if (shoppingList == null)
@@ -138,6 +150,10 @@
         await SaveShoppingList();
     }
 
+    /// <summary>
+    /// Adds a new item or merges with existing item if name matches.
+    /// Count items set Qty = amount; other units always Qty = 1.
+    /// </summary>
     async Task AddItem()
     {
         var itemName = newItemName.Trim();
@@ -270,6 +286,9 @@
         await SaveShoppingList();
     }
 
+    /// <summary>
+    /// Persists the current shopping list to browser localStorage.
+    /// </summary>
     async Task SaveShoppingList()
     {
         if (shoppingList == null)
@@ -287,6 +306,9 @@
         }
     }
 
+    /// <summary>
+    /// Returns shopping items sorted by the active column and direction.
+    /// </summary>
     IEnumerable<ShoppingItem> SortedItems
     {
         get
