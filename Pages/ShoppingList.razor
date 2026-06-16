@@ -116,20 +116,28 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        var savedJson = await JS.InvokeAsync<string?>(
-            "localStorage.getItem",
-            "shoppingList"
-        );
-
-        if (!string.IsNullOrWhiteSpace(savedJson))
+        try
         {
-            shoppingList = JsonSerializer.Deserialize<ShoppingListData>(savedJson) ?? new ShoppingListData();
-            shoppingList.ShoppingItems ??= new List<ShoppingItem>();
-            await NormalizeShoppingItemIds();
+            var savedJson = await JS.InvokeAsync<string?>(
+                "localStorage.getItem",
+                "shoppingList"
+            );
+
+            if (!string.IsNullOrWhiteSpace(savedJson))
+            {
+                shoppingList = JsonSerializer.Deserialize<ShoppingListData>(savedJson) ?? new ShoppingListData();
+                shoppingList.ShoppingItems ??= new List<ShoppingItem>();
+                await NormalizeShoppingItemIds();
+            }
+            else
+            {
+                shoppingList = new ShoppingListData();
+            }
         }
-        else
+        catch (Exception ex)
         {
             shoppingList = new ShoppingListData();
+            statusMessage = $"Failed to load shopping list: {ex.Message}";
         }
     }
 
