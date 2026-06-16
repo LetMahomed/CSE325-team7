@@ -4,10 +4,14 @@
 <nav class="navbar">
     <a class="brand" href="">🐀 Remy's Recipes</a>
 
-    <div class="nav-links">
-        <a href="/">Home</a>
-        <a href="/recipes">Recipes</a>
-        <a href="/shoppinglist">Shopping List</a>
+    <button class="hamburger" type="button" @onclick="ToggleMenu">
+        ☰
+    </button>
+
+    <div class="nav-links @(menuOpen ? "open" : "")">
+        <a href="/" @onclick="CloseMenu">Home</a>
+        <a href="/recipes" @onclick="CloseMenu">Recipes</a>
+        <a href="/shoppinglist" @onclick="CloseMenu">Shopping List</a>
 
         <button class="search-icon" type="button" @onclick="ToggleSearch">
             🔍
@@ -28,11 +32,22 @@
 
 @code {
     bool showSearch = false;
+    bool menuOpen = false;
     string searchText = "";
 
     void ToggleSearch()
     {
         showSearch = !showSearch;
+    }
+
+    void ToggleMenu()
+    {
+        menuOpen = !menuOpen;
+    }
+
+    void CloseMenu()
+    {
+        menuOpen = false;
     }
 
     void SearchRecipes()
@@ -47,5 +62,7 @@
         {
             Navigation.NavigateTo($"/recipes?search={Uri.EscapeDataString(search)}");
         }
+
+        CloseMenu();
     }
 }

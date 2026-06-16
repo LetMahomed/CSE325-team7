@@ -4,6 +4,7 @@
     justify-content: space-between;
     padding: 0.75rem 1.5rem;
     background-color: var(--color-navy);
+    flex-wrap: wrap;
 }
 
 .brand {
@@ -17,6 +18,25 @@
 .brand:hover {
     color: var(--color-accent-gold);
     text-decoration: none;
+}
+
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--color-light-text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+}
+
+.hamburger:hover {
+    color: var(--color-accent-gold);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
 }
 
 .nav-links a {
@@ -56,4 +76,47 @@
 .nav-search input {
     padding: 0.35rem 0.6rem;
     font-size: 0.9rem;
+}
+
+/* Mobile: 768px and below */
+@media (max-width: 768px) {
+    .hamburger {
+        display: block;
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        padding-top: 0.75rem;
+    }
+
+    .nav-links.open {
+        display: flex;
+    }
+
+    .nav-links a {
+        margin: 0.5rem 0;
+        margin-left: 0;
+        font-size: 1.1rem;
+    }
+
+    .search-icon {
+        margin: 0.5rem 0;
+        margin-left: 0;
+    }
+
+    .nav-search {
+        margin: 0.5rem 0;
+        margin-left: 0;
+        display: block;
+    }
+
+    .nav-search input {
+        width: 100%;
+    }
+
+    .content {
+        padding: 1rem;
+    }
 }
