@@ -114,6 +114,17 @@
     font-size: 0.85rem;
 }
 
+.sortable {
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.sort-icon {
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+
 @media (max-width: 768px) {
     .shopping-table th,
     .shopping-table td {
