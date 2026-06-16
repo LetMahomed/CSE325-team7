@@ -129,3 +129,17 @@
     margin-right: 0.25rem;
     font-size: 0.85rem;
 }
+
+@media (max-width: 768px) {
+    .recipe-card {
+        padding: 1rem;
+    }
+
+    .recipe-actions {
+        flex-direction: column;
+    }
+
+    .review-form-actions {
+        flex-direction: column;
+    }
+}
