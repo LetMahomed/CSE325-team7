@@ -16,6 +16,11 @@ public class RecipeService
     private const string StorageKey = "recipes";
     private List<Recipe>? _recipes;
 
+    /// <summary>
+    /// Contains the last error message if an operation fails. Empty string if no error.
+    /// </summary>
+    public string ErrorMessage { get; private set; } = "";
+
     public RecipeService(IJSRuntime js, HttpClient http)
     {
         _js = js;
@@ -31,19 +36,28 @@ public class RecipeService
         if (_recipes != null)
             return _recipes;
 
-        // Try loading from localStorage first
-        var json = await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        try
+        {
+            ErrorMessage = "";
+            // Try loading from localStorage first
+            var json = await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
 
-        if (!string.IsNullOrWhiteSpace(json))
-        {
-            _recipes = JsonSerializer.Deserialize<List<Recipe>>(json) ?? new List<Recipe>();
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                _recipes = JsonSerializer.Deserialize<List<Recipe>>(json) ?? new List<Recipe>();
+            }
+            else
+            {
+                // First visit: seed from static JSON file
+                var data = await _http.GetFromJsonAsync<RecipeData>("data/recipes.json");
+                _recipes = data?.Recipes ?? new List<Recipe>();
+                await SaveAsync();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            // First visit: seed from static JSON file
-            var data = await _http.GetFromJsonAsync<RecipeData>("data/recipes.json");
-            _recipes = data?.Recipes ?? new List<Recipe>();
-            await SaveAsync();
+            ErrorMessage = $"Failed to load recipes: {ex.Message}";
+            _recipes = new List<Recipe>();
         }
 
         return _recipes;
@@ -52,37 +66,66 @@ public class RecipeService
     /// <summary>
     /// Adds a new recipe and assigns it a unique ID.
     /// </summary>
-    public async Task AddRecipeAsync(Recipe recipe)
+    public async Task<bool> AddRecipeAsync(Recipe recipe)
     {
-        var recipes = await GetRecipesAsync();
-        // Auto-increment ID based on existing max
-        recipe.Id = recipes.Any() ? recipes.Max(r => r.Id) + 1 : 1;
-        recipes.Add(recipe);
-        await SaveAsync();
+        try
+        {
+            ErrorMessage = "";
+            var recipes = await GetRecipesAsync();
+            recipe.Id = recipes.Any() ? recipes.Max(r => r.Id) + 1 : 1;
+            recipes.Add(recipe);
+            await SaveAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to add recipe: {ex.Message}";
+            return false;
+        }
     }
 
     /// <summary>
     /// Updates an existing recipe by matching on ID.
     /// </summary>
-    public async Task UpdateRecipeAsync(Recipe recipe)
+    public async Task<bool> UpdateRecipeAsync(Recipe recipe)
     {
-        var recipes = await GetRecipesAsync();
-        var index = recipes.FindIndex(r => r.Id == recipe.Id);
-        if (index >= 0)
+        try
         {
-            recipes[index] = recipe;
-            await SaveAsync();
+            ErrorMessage = "";
+            var recipes = await GetRecipesAsync();
+            var index = recipes.FindIndex(r => r.Id == recipe.Id);
+            if (index >= 0)
+            {
+                recipes[index] = recipe;
+                await SaveAsync();
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to update recipe: {ex.Message}";
+            return false;
         }
     }
 
     /// <summary>
     /// Deletes a recipe by ID.
     /// </summary>
-    public async Task DeleteRecipeAsync(int id)
+    public async Task<bool> DeleteRecipeAsync(int id)
     {
-        var recipes = await GetRecipesAsync();
-        recipes.RemoveAll(r => r.Id == id);
-        await SaveAsync();
+        try
+        {
+            ErrorMessage = "";
+            var recipes = await GetRecipesAsync();
+            recipes.RemoveAll(r => r.Id == id);
+            await SaveAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to delete recipe: {ex.Message}";
+            return false;
+        }
     }
 
     /// <summary>

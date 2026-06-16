@@ -29,6 +29,11 @@
     @RenderForm()
 }
 
+@if (!string.IsNullOrEmpty(RecipeService.ErrorMessage))
+{
+    <p class="form-error">⚠️ @RecipeService.ErrorMessage</p>
+}
+
 @if (recipes == null)
 {
     <p>Loading...</p>
@@ -324,9 +329,30 @@ else
 
     private async Task SaveRecipe()
     {
+        // Validate required fields
         if (string.IsNullOrWhiteSpace(formName))
         {
             formError = "Name is required.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(formCategory))
+        {
+            formError = "Category is required.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(formIngredients))
+        {
+            formError = "At least one ingredient is required.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(formInstructions))
+        {
+            formError = "At least one instruction is required.";
+            return;
+        }
+        if (formServings < 1)
+        {
+            formError = "Servings must be at least 1.";
             return;
         }
 
@@ -335,6 +361,7 @@ else
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
 
+        bool success;
         if (editingRecipe != null)
         {
             editingRecipe.Name = formName.Trim();
@@ -344,11 +371,11 @@ else
             editingRecipe.Servings = formServings;
             editingRecipe.Ingredients = ingredients;
             editingRecipe.Instructions = instructions;
-            await RecipeService.UpdateRecipeAsync(editingRecipe);
+            success = await RecipeService.UpdateRecipeAsync(editingRecipe);
         }
         else
         {
-            await RecipeService.AddRecipeAsync(new Recipe
+            success = await RecipeService.AddRecipeAsync(new Recipe
             {
                 Name = formName.Trim(),
                 Category = formCategory.Trim(),
@@ -360,9 +387,14 @@ else
             });
         }
 
+        if (!success)
+        {
+            formError = RecipeService.ErrorMessage;
+            return;
+        }
+
         showForm = false;
         editingRecipe = null;
-        statusMessage = editingRecipe == null ? "" : "";
     }
 
     private void CancelForm()
@@ -374,8 +406,16 @@ else
 
     private async Task DeleteRecipe(Recipe recipe)
     {
-        await RecipeService.DeleteRecipeAsync(recipe.Id);
-        recipes = await RecipeService.GetRecipesAsync();
+        var success = await RecipeService.DeleteRecipeAsync(recipe.Id);
+        if (success)
+        {
+            recipes = await RecipeService.GetRecipesAsync();
+        }
+        else
+        {
+            statusRecipeId = recipe.Id;
+            statusMessage = RecipeService.ErrorMessage;
+        }
     }
 
     /// <summary>
@@ -473,10 +513,12 @@ else
     /// </summary>
     private async Task AddToShoppingList(Recipe recipe)
     {
-        var json = await JS.InvokeAsync<string?>("localStorage.getItem", "shoppingList");
-        var shoppingList = string.IsNullOrWhiteSpace(json)
-            ? new ShoppingListData()
-            : JsonSerializer.Deserialize<ShoppingListData>(json) ?? new ShoppingListData();
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("localStorage.getItem", "shoppingList");
+            var shoppingList = string.IsNullOrWhiteSpace(json)
+                ? new ShoppingListData()
+                : JsonSerializer.Deserialize<ShoppingListData>(json) ?? new ShoppingListData();
 
         shoppingList.ShoppingItems ??= new List<ShoppingItem>();
 
@@ -523,5 +565,11 @@ else
         addedRecipeIds.Add(recipe.Id);
         statusRecipeId = recipe.Id;
         statusMessage = $"Added {recipe.Ingredients.Count} ingredients from \"{recipe.Name}\" to shopping list.";
+        }
+        catch (Exception ex)
+        {
+            statusRecipeId = recipe.Id;
+            statusMessage = $"Failed to update shopping list: {ex.Message}";
+        }
     }
 }
