@@ -11,7 +11,7 @@
     <button class="btn-primary" @onclick="ShowAddForm">+ New Recipe</button>
 
     <div class="recipe-filters">
-        <select @onchange="OnCategoryChanged">
+        <select @onchange="OnCategoryChanged" aria-label="Filter by category">
             <option value="">All Categories</option>
             @if (recipes != null)
             {
@@ -269,29 +269,29 @@ else
     /// </summary>
     private RenderFragment RenderForm() => __builder =>
     {
-        <div class="recipe-form">
+        <div class="recipe-form" role="form" aria-label="Recipe form">
             <h3>@(editingRecipe == null ? "Add Recipe" : "Edit Recipe")</h3>
 
-            <label>Name</label>
-            <input type="text" @bind="formName" />
+            <label for="recipe-name">Name</label>
+            <input id="recipe-name" type="text" @bind="formName" required />
 
-            <label>Category</label>
-            <input type="text" @bind="formCategory" />
+            <label for="recipe-category">Category</label>
+            <input id="recipe-category" type="text" @bind="formCategory" required />
 
-            <label>Prep Time</label>
-            <input type="text" @bind="formPrepTime" placeholder="e.g. 15 minutes" />
+            <label for="recipe-prep">Prep Time</label>
+            <input id="recipe-prep" type="text" @bind="formPrepTime" placeholder="e.g. 15 minutes" />
 
-            <label>Cook Time</label>
-            <input type="text" @bind="formCookTime" placeholder="e.g. 30 minutes" />
+            <label for="recipe-cook">Cook Time</label>
+            <input id="recipe-cook" type="text" @bind="formCookTime" placeholder="e.g. 30 minutes" />
 
-            <label>Servings</label>
-            <input type="number" min="1" @bind="formServings" />
+            <label for="recipe-servings">Servings</label>
+            <input id="recipe-servings" type="number" min="1" @bind="formServings" />
 
-            <label>Ingredients (one per line: amount unit name)</label>
-            <textarea rows="5" @bind="formIngredients" placeholder="2 cups Flour"></textarea>
+            <label for="recipe-ingredients">Ingredients (one per line: amount unit name)</label>
+            <textarea id="recipe-ingredients" rows="5" @bind="formIngredients" placeholder="2 cups Flour"></textarea>
 
-            <label>Instructions (one step per line)</label>
-            <textarea rows="5" @bind="formInstructions" placeholder="Preheat oven to 350°F."></textarea>
+            <label for="recipe-instructions">Instructions (one step per line)</label>
+            <textarea id="recipe-instructions" rows="5" @bind="formInstructions" placeholder="Preheat oven to 350°F."></textarea>
 
             @if (!string.IsNullOrEmpty(formError))
             {
