@@ -1,11 +1,56 @@
 @page "/recipes"
-@inject HttpClient Http
+@using CSE325_team7.Services
+@inject RecipeService RecipeService
 
 <h1>Recipes</h1>
 
-@if (!FilteredRecipes.Any())
+<button class="btn-primary" @onclick="ShowAddForm">+ New Recipe</button>
+
+@if (showForm)
 {
-    <p>No recipes for "@SearchText"</p>
+    <div class="recipe-form">
+        <h3>@(editingRecipe == null ? "Add Recipe" : "Edit Recipe")</h3>
+
+        <label>Name</label>
+        <input type="text" @bind="formName" />
+
+        <label>Category</label>
+        <input type="text" @bind="formCategory" />
+
+        <label>Prep Time</label>
+        <input type="text" @bind="formPrepTime" placeholder="e.g. 15 minutes" />
+
+        <label>Cook Time</label>
+        <input type="text" @bind="formCookTime" placeholder="e.g. 30 minutes" />
+
+        <label>Servings</label>
+        <input type="number" min="1" @bind="formServings" />
+
+        <label>Ingredients (one per line: amount unit name)</label>
+        <textarea rows="5" @bind="formIngredients" placeholder="2 cups Flour&#10;1 tsp Salt"></textarea>
+
+        <label>Instructions (one step per line)</label>
+        <textarea rows="5" @bind="formInstructions" placeholder="Preheat oven to 350°F.&#10;Mix dry ingredients."></textarea>
+
+        @if (!string.IsNullOrEmpty(formError))
+        {
+            <p class="form-error">@formError</p>
+        }
+
+        <div class="form-actions">
+            <button class="btn-primary" @onclick="SaveRecipe">Save</button>
+            <button class="btn-secondary" @onclick="CancelForm">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (recipes == null)
+{
+    <p>Loading...</p>
+}
+else if (!FilteredRecipes.Any())
+{
+    <p>No recipes found.</p>
 }
 else
 {
@@ -14,10 +59,7 @@ else
         <div class="recipe-card">
             <h2>@recipe.Name</h2>
 
-            <p>
-                <strong>Category:</strong> @recipe.Category
-            </p>
-
+            <p><strong>Category:</strong> @recipe.Category</p>
             <p>
                 <strong>Prep:</strong> @recipe.PrepTime |
                 <strong>Cook:</strong> @recipe.CookTime |
@@ -28,9 +70,7 @@ else
             <ul>
                 @foreach (var ingredient in recipe.Ingredients)
                 {
-                    <li>
-                        @ingredient.Amount @ingredient.Unit @ingredient.Name
-                    </li>
+                    <li>@ingredient.Amount @ingredient.Unit @ingredient.Name</li>
                 }
             </ul>
 
@@ -41,40 +81,154 @@ else
                     <li>@step</li>
                 }
             </ol>
+
+            <div class="recipe-actions">
+                <button class="btn-secondary" @onclick="() => EditRecipe(recipe)">✏️ Edit</button>
+                <button class="btn-danger" @onclick="() => DeleteRecipe(recipe)">🗑️ Delete</button>
+            </div>
         </div>
     }
 }
 
 @code {
-    private RecipeData? recipeData;
+    private List<Recipe>? recipes;
+    private bool showForm = false;
+    private Recipe? editingRecipe = null;
+
+    private string formName = "";
+    private string formCategory = "";
+    private string formPrepTime = "";
+    private string formCookTime = "";
+    private int formServings = 4;
+    private string formIngredients = "";
+    private string formInstructions = "";
+    private string formError = "";
+
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? SearchText { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        recipeData = await Http.GetFromJsonAsync<RecipeData>(
-            "data/recipes.json");
+        recipes = await RecipeService.GetRecipesAsync();
     }
-    [SupplyParameterFromQuery(Name = "search")]
-    public string? SearchText { get; set; }
 
     private IEnumerable<Recipe> FilteredRecipes
     {
         get
         {
-            if (recipeData == null)
-            {
-                return Enumerable.Empty<Recipe>();
-            }
+            if (recipes == null) return Enumerable.Empty<Recipe>();
 
             if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                return recipeData.Recipes;
-            }
+                return recipes;
 
             var search = SearchText.Trim();
-
-            return recipeData.Recipes.Where(recipe =>
-                recipe.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                recipe.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
+            return recipes.Where(r =>
+                r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                r.Category.Contains(search, StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    private void ShowAddForm()
+    {
+        editingRecipe = null;
+        formName = "";
+        formCategory = "";
+        formPrepTime = "";
+        formCookTime = "";
+        formServings = 4;
+        formIngredients = "";
+        formInstructions = "";
+        formError = "";
+        showForm = true;
+    }
+
+    private void EditRecipe(Recipe recipe)
+    {
+        editingRecipe = recipe;
+        formName = recipe.Name;
+        formCategory = recipe.Category;
+        formPrepTime = recipe.PrepTime;
+        formCookTime = recipe.CookTime;
+        formServings = recipe.Servings;
+        formIngredients = string.Join("\n", recipe.Ingredients.Select(i => $"{i.Amount} {i.Unit} {i.Name}"));
+        formInstructions = string.Join("\n", recipe.Instructions);
+        formError = "";
+        showForm = true;
+    }
+
+    private async Task SaveRecipe()
+    {
+        if (string.IsNullOrWhiteSpace(formName))
+        {
+            formError = "Name is required.";
+            return;
+        }
+
+        var ingredients = ParseIngredients(formIngredients);
+        var instructions = formInstructions
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0)
+            .ToList();
+
+        if (editingRecipe != null)
+        {
+            editingRecipe.Name = formName.Trim();
+            editingRecipe.Category = formCategory.Trim();
+            editingRecipe.PrepTime = formPrepTime.Trim();
+            editingRecipe.CookTime = formCookTime.Trim();
+            editingRecipe.Servings = formServings;
+            editingRecipe.Ingredients = ingredients;
+            editingRecipe.Instructions = instructions;
+            await RecipeService.UpdateRecipeAsync(editingRecipe);
+        }
+        else
+        {
+            var newRecipe = new Recipe
+            {
+                Name = formName.Trim(),
+                Category = formCategory.Trim(),
+                PrepTime = formPrepTime.Trim(),
+                CookTime = formCookTime.Trim(),
+                Servings = formServings,
+                Ingredients = ingredients,
+                Instructions = instructions
+            };
+            await RecipeService.AddRecipeAsync(newRecipe);
+        }
+
+        showForm = false;
+        editingRecipe = null;
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        editingRecipe = null;
+        formError = "";
+    }
+
+    private async Task DeleteRecipe(Recipe recipe)
+    {
+        await RecipeService.DeleteRecipeAsync(recipe.Id);
+        recipes = await RecipeService.GetRecipesAsync();
+    }
+
+    private List<Ingredient> ParseIngredients(string text)
+    {
+        var list = new List<Ingredient>();
+        foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Trim().Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 3 && double.TryParse(parts[0], out var amount))
+            {
+                list.Add(new Ingredient { Amount = amount, Unit = parts[1], Name = parts[2] });
+            }
+            else if (parts.Length >= 1)
+            {
+                list.Add(new Ingredient { Amount = 1, Unit = "", Name = line.Trim() });
+            }
+        }
+        return list;
     }
 }
