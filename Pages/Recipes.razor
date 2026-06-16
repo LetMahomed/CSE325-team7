@@ -127,6 +127,7 @@ else
                         <div class="review-item">
                             <span class="review-stars">@(new string('★', review.Rating))@(new string('☆', 5 - review.Rating))</span>
                             <span class="review-date">@review.Date.ToString("MMM d, yyyy")</span>
+                            <button class="btn-delete-review" @onclick="() => DeleteReview(recipe, review)"> 🗑️ Delete </button>
                             @if (!string.IsNullOrWhiteSpace(review.Comment))
                             {
                                 <p class="review-comment">@review.Comment</p>
@@ -327,4 +328,12 @@ else
         addedRecipeIds.Add(recipe.Id);
         statusMessage = $"Added {recipe.Ingredients.Count} ingredients from \"{recipe.Name}\" to shopping list.";
     }
+    private async Task DeleteReview(Recipe recipe, Review review)
+{
+    recipe.Reviews.Remove(review);
+
+    await RecipeService.UpdateRecipeAsync(recipe);
+
+    statusMessage = $"Review deleted from \"{recipe.Name}\".";
+}
 }
