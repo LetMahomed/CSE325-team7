@@ -4,34 +4,34 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 
-<nav class="navbar">
-    <a class="brand" href="">🐀 Remy's Recipes</a>
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+    <a class="brand" href="" aria-label="Remy's Recipes Home">🐀 Remy's Recipes</a>
 
     <!-- Hamburger button: visible only on mobile (≤768px) -->
-    <button class="hamburger" type="button" @onclick="ToggleMenu">
+    <button class="hamburger" type="button" @onclick="ToggleMenu" aria-label="Toggle navigation menu" aria-expanded="@menuOpen">
         ☰
     </button>
 
     <!-- Nav links collapse on mobile, expand when hamburger is toggled -->
-    <div class="nav-links @(menuOpen ? "open" : "")">
-        <a href="/" @onclick="CloseMenu">Home</a>
-        <a href="/recipes" @onclick="CloseMenu">Recipes</a>
-        <a href="/shoppinglist" @onclick="CloseMenu">Shopping List</a>
+    <div class="nav-links @(menuOpen ? "open" : "")" role="menubar">
+        <a href="/" @onclick="CloseMenu" role="menuitem">Home</a>
+        <a href="/recipes" @onclick="CloseMenu" role="menuitem">Recipes</a>
+        <a href="/shoppinglist" @onclick="CloseMenu" role="menuitem">Shopping List</a>
 
-        <button class="search-icon" type="button" @onclick="ToggleSearch">
+        <button class="search-icon" type="button" @onclick="ToggleSearch" aria-label="Toggle search">
             🔍
         </button>
 
         @if (showSearch)
         {
-            <form class="nav-search" @onsubmit="SearchRecipes" @onsubmit:preventDefault>
-                <input type="text" placeholder="Search recipes..." @bind="searchText" />
+            <form class="nav-search" @onsubmit="SearchRecipes" @onsubmit:preventDefault role="search">
+                <input type="text" placeholder="Search recipes..." @bind="searchText" aria-label="Search recipes" />
             </form>
         }
     </div>
 </nav>
 
-<main class="content">
+<main class="content" role="main">
     @Body
 </main>
 

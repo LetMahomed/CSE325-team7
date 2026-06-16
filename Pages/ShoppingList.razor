@@ -15,9 +15,9 @@
         <h2>Shopping List</h2>
 
         <div class="add-item-form">
-            <label>Add an item:</label>
-            <input type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" placeholder="Qty" />
-            <select @bind="newItemUnit">
+            <label for="add-qty">Add an item:</label>
+            <input id="add-qty" type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" placeholder="Qty" aria-label="Quantity" />
+            <select @bind="newItemUnit" aria-label="Unit of measurement">
                 <option value="Count">Count</option>
                 <option value="Cup">Cup(s)</option>
                 <option value="Tablespoon">Tablespoon(s)</option>
@@ -29,7 +29,7 @@
                 <option value="Milliliter">Milliliter(s)</option>
                 <option value="Liter">Liter(s)</option>
             </select>
-            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" placeholder="Item name" />
+            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" placeholder="Item name" aria-label="Item name" />
             <button class="btn-primary" type="button" @onclick="AddItem">Add</button>
         </div>
 
@@ -52,9 +52,9 @@
                 <thead>
                     <tr>
                         <th class="col-check"></th>
-                        <th class="col-qty" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("qty")'>Qty <span>@SortIcon("qty")</span></th>
-                        <th class="col-item" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("item")'>Item <span>@SortIcon("item")</span></th>
-                        <th class="col-req" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("req")'>Recipe Req. <span>@SortIcon("req")</span></th>
+                        <th class="col-qty" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("qty")' aria-label="Sort by quantity">Qty <span aria-hidden="true">@SortIcon("qty")</span></th>
+                        <th class="col-item" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("item")' aria-label="Sort by item name">Item <span aria-hidden="true">@SortIcon("item")</span></th>
+                        <th class="col-req" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("req")' aria-label="Sort by recipe requirement">Recipe Req. <span aria-hidden="true">@SortIcon("req")</span></th>
                         <th class="col-actions"></th>
                     </tr>
                 </thead>
@@ -65,8 +65,8 @@
                             @if (editingItem == item)
                             {
                                 <td></td>
-                                <td><input type="number" min="1" @bind="editItemQuantity" class="edit-input-qty" /></td>
-                                <td><input type="text" @bind="editItemName" class="edit-input-name" /></td>
+                                <td><input type="number" min="1" @bind="editItemQuantity" class="edit-input-qty" aria-label="Edit quantity" /></td>
+                                <td><input type="text" @bind="editItemName" class="edit-input-name" aria-label="Edit item name" /></td>
                                 <td></td>
                                 <td class="col-actions">
                                     <button class="btn-primary btn-sm" type="button" @onclick="SaveEdit">Save</button>
@@ -75,7 +75,7 @@
                             }
                             else
                             {
-                                <td class="col-check"><input type="checkbox" @bind="item.IsChecked" /></td>
+                                <td class="col-check"><input type="checkbox" @bind="item.IsChecked" aria-label="Mark @item.Name as checked" /></td>
                                 <td>@item.Quantity</td>
                                 <td class="@(item.IsChecked ? "item-checked" : "")">@item.Name</td>
                                 <td class="recipe-req">@item.RecipeRequirement</td>
