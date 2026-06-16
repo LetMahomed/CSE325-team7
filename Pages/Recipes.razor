@@ -50,13 +50,37 @@ else
                 <strong>Servings:</strong> @recipe.Servings
             </p>
 
+            @if (recipe.Reviews.Any())
+            {
+                <p class="average-rating">
+                    <strong>Rating:</strong> @GetStars(recipe) (@recipe.Reviews.Count review@(recipe.Reviews.Count == 1 ? "" : "s"))
+                </p>
+            }
+
             <h4>Ingredients</h4>
             <ul>
                 @foreach (var ingredient in recipe.Ingredients)
                 {
-                    <li>@ingredient.Amount @ingredient.Unit @ingredient.Name</li>
+                    <li>
+                        @if (addedRecipeIds.Contains(recipe.Id))
+                        {
+                            <span class="in-cart">🛒</span>
+                        }
+                        @ingredient.Amount @ingredient.Unit @ingredient.Name
+                    </li>
                 }
             </ul>
+
+            <button class="btn-primary" @onclick="() => AddToShoppingList(recipe)">
+                @if (addedRecipeIds.Contains(recipe.Id))
+                {
+                    <text>✅ Added to Shopping List</text>
+                }
+                else
+                {
+                    <text>🛒 Add to Shopping List</text>
+                }
+            </button>
 
             <h4>Instructions</h4>
             <ol>
@@ -66,9 +90,51 @@ else
                 }
             </ol>
 
-            <button class="btn-primary" @onclick="() => AddToShoppingList(recipe)">
-                🛒 Add to Shopping List
-            </button>
+            <div class="recipe-actions">
+                <button class="btn-secondary" @onclick="() => ToggleReviewForm(recipe.Id)">
+                    ✍️ Add Review
+                </button>
+            </div>
+
+            @if (reviewingRecipeId == recipe.Id)
+            {
+                <div class="review-form">
+                    @if (reviewError != "")
+                    {
+                        <p class="review-error">@reviewError</p>
+                    }
+                    <div class="star-select">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            var star = i;
+                            <span class="star @(star <= newRating ? "filled" : "")" @onclick="() => newRating = star">★</span>
+                        }
+                    </div>
+                    <textarea placeholder="Add a comment..." @bind="newComment"></textarea>
+                    <div class="review-form-actions">
+                        <button class="btn-primary" @onclick="() => SubmitReview(recipe)">Submit</button>
+                        <button class="btn-secondary" @onclick="() => CancelReview()">Cancel</button>
+                    </div>
+                </div>
+            }
+
+            @if (recipe.Reviews.Any())
+            {
+                <div class="reviews-section">
+                    <h4>Reviews</h4>
+                    @foreach (var review in recipe.Reviews.OrderByDescending(r => r.Date))
+                    {
+                        <div class="review-item">
+                            <span class="review-stars">@(new string('★', review.Rating))@(new string('☆', 5 - review.Rating))</span>
+                            <span class="review-date">@review.Date.ToString("MMM d, yyyy")</span>
+                            @if (!string.IsNullOrWhiteSpace(review.Comment))
+                            {
+                                <p class="review-comment">@review.Comment</p>
+                            }
+                        </div>
+                    }
+                </div>
+            }
         </div>
     }
 }
@@ -77,6 +143,11 @@ else
     private List<Recipe>? recipes;
     private string SelectedCategory = "";
     private string statusMessage = "";
+    private int? reviewingRecipeId = null;
+    private int newRating = 0;
+    private string newComment = "";
+    private string reviewError = "";
+    private HashSet<int> addedRecipeIds = new();
 
     [SupplyParameterFromQuery(Name = "search")]
     public string? SearchText { get; set; }
@@ -84,6 +155,26 @@ else
     protected override async Task OnInitializedAsync()
     {
         recipes = await RecipeService.GetRecipesAsync();
+        await LoadAddedRecipeIds();
+    }
+
+    private async Task LoadAddedRecipeIds()
+    {
+        var json = await JS.InvokeAsync<string?>("localStorage.getItem", "shoppingList");
+        if (string.IsNullOrWhiteSpace(json) || recipes == null)
+            return;
+
+        var shoppingList = JsonSerializer.Deserialize<ShoppingListData>(json);
+        if (shoppingList?.ShoppingItems == null)
+            return;
+
+        var itemNames = shoppingList.ShoppingItems.Select(i => i.Name).ToHashSet();
+
+        foreach (var recipe in recipes)
+        {
+            if (recipe.Ingredients.All(ing => itemNames.Contains(ing.Name)))
+                addedRecipeIds.Add(recipe.Id);
+        }
     }
 
     private IEnumerable<string> Categories =>
@@ -121,6 +212,64 @@ else
         SelectedCategory = e.Value?.ToString() ?? "";
     }
 
+    private string GetStars(Recipe recipe)
+    {
+        var avg = recipe.Reviews.Average(r => r.Rating);
+        var rounded = (int)Math.Round(avg);
+        return new string('★', rounded) + new string('☆', 5 - rounded);
+    }
+
+    private void ToggleReviewForm(int recipeId)
+    {
+        if (reviewingRecipeId == recipeId)
+        {
+            reviewingRecipeId = null;
+        }
+        else
+        {
+            reviewingRecipeId = recipeId;
+            newRating = 0;
+            newComment = "";
+        }
+    }
+
+    private async Task SubmitReview(Recipe recipe)
+    {
+        if (newRating == 0)
+        {
+            reviewError = "Please select a star rating.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newComment))
+        {
+            reviewError = "Please add a comment.";
+            return;
+        }
+
+        reviewError = "";
+        recipe.Reviews.Add(new Review
+        {
+            Rating = newRating,
+            Comment = newComment.Trim(),
+            Date = DateTime.Now
+        });
+
+        await RecipeService.UpdateRecipeAsync(recipe);
+        reviewingRecipeId = null;
+        newRating = 0;
+        newComment = "";
+        statusMessage = $"Review added for \"{recipe.Name}\".";
+    }
+
+    private void CancelReview()
+    {
+        reviewingRecipeId = null;
+        newRating = 0;
+        newComment = "";
+        reviewError = "";
+    }
+
     private async Task AddToShoppingList(Recipe recipe)
     {
         var json = await JS.InvokeAsync<string?>("localStorage.getItem", "shoppingList");
@@ -136,18 +285,46 @@ else
 
         foreach (var ingredient in recipe.Ingredients)
         {
-            shoppingList.ShoppingItems.Add(new ShoppingItem
+            var existing = shoppingList.ShoppingItems
+                .FirstOrDefault(i => i.Name.Equals(ingredient.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
             {
-                Id = nextId++,
-                Name = $"{ingredient.Amount} {ingredient.Unit} {ingredient.Name}",
-                Quantity = 1,
-                IsChecked = false
-            });
+                // Parse existing requirement to try summing
+                var parts = existing.RecipeRequirement.Split(' ', 2);
+                if (parts.Length == 2 &&
+                    double.TryParse(parts[0], out var existingAmount) &&
+                    parts[1] == ingredient.Unit)
+                {
+                    // Same unit: sum the amounts
+                    var total = existingAmount + ingredient.Amount;
+                    existing.RecipeRequirement = $"{total} {ingredient.Unit}";
+                }
+                else
+                {
+                    // Different unit or unparseable: append
+                    existing.RecipeRequirement = string.IsNullOrWhiteSpace(existing.RecipeRequirement)
+                        ? $"{ingredient.Amount} {ingredient.Unit}"
+                        : $"{existing.RecipeRequirement}, {ingredient.Amount} {ingredient.Unit}";
+                }
+            }
+            else
+            {
+                shoppingList.ShoppingItems.Add(new ShoppingItem
+                {
+                    Id = nextId++,
+                    Name = ingredient.Name,
+                    Quantity = 1,
+                    IsChecked = false,
+                    RecipeRequirement = $"{ingredient.Amount} {ingredient.Unit}"
+                });
+            }
         }
 
         var updatedJson = JsonSerializer.Serialize(shoppingList);
         await JS.InvokeVoidAsync("localStorage.setItem", "shoppingList", updatedJson);
 
+        addedRecipeIds.Add(recipe.Id);
         statusMessage = $"Added {recipe.Ingredients.Count} ingredients from \"{recipe.Name}\" to shopping list.";
     }
 }
