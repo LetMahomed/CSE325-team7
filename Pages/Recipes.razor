@@ -78,13 +78,13 @@ else
                 <ul>
                     @foreach (var ingredient in recipe.Ingredients)
                     {
-                        <li>
-                            @if (addedRecipeIds.Contains(recipe.Id))
-                            {
-                                <span class="in-cart">🛒</span>
-                            }
-                            @ingredient.Amount @ingredient.Unit @ingredient.Name
-                        </li>
+                <li>
+                    @if (addedRecipeIds.Contains(recipe.Id))
+                    {
+                        <span class="in-cart">🛒</span>
+                    }
+                    @ingredient.Amount @ingredient.Unit @ingredient.Name
+                </li>
                     }
                 </ul>
 
@@ -136,22 +136,28 @@ else
                 }
 
                 @if (recipe.Reviews.Any())
+{
+    <div class="reviews-section">
+        <h4>Reviews</h4>
+        @foreach (var review in recipe.Reviews.OrderByDescending(r => r.Date))
+        {
+            <div class="review-item">
+                <span class="review-stars">@(new string('★', review.Rating))@(new string('☆', 5 - review.Rating))</span>
+                <span class="review-date">@review.Date.ToString("MMM d, yyyy")</span>
+
+                <button class="btn-delete-review"
+                        @onclick="() => DeleteReview(recipe, review)">
+                    🗑️ Delete
+                </button>
+
+                @if (!string.IsNullOrWhiteSpace(review.Comment))
                 {
-                    <div class="reviews-section">
-                        <h4>Reviews</h4>
-                        @foreach (var review in recipe.Reviews.OrderByDescending(r => r.Date))
-                        {
-                            <div class="review-item">
-                                <span class="review-stars">@(new string('★', review.Rating))@(new string('☆', 5 - review.Rating))</span>
-                                <span class="review-date">@review.Date.ToString("MMM d, yyyy")</span>
-                                @if (!string.IsNullOrWhiteSpace(review.Comment))
-                                {
-                                    <p class="review-comment">@review.Comment</p>
-                                }
-                            </div>
-                        }
-                    </div>
+                    <p class="review-comment">@review.Comment</p>
                 }
+            </div>
+        }
+    </div>
+}
             }
         </div>
     }
@@ -572,4 +578,12 @@ else
             statusMessage = $"Failed to update shopping list: {ex.Message}";
         }
     }
+    private async Task DeleteReview(Recipe recipe, Review review)
+{
+    recipe.Reviews.Remove(review);
+
+    await RecipeService.UpdateRecipeAsync(recipe);
+
+    statusMessage = $"Review deleted from \"{recipe.Name}\".";
+}
 }
