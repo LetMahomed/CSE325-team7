@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "CSE325_team7",
   "resources": {
-    "hash": "sha256-spO7yPqDxcnDOsUy1DhsdOUfj0D0k69X4Hg996iNqio=",
+    "hash": "sha256-HcnioH1HouD3ozcbN9JEI6rlRwZ5u/5FSWINKiZjmwk=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-sn/g61GjVPhViOYQDkq1OMlk0eyS9r2Hi0qgU2o0HIU="
     },
@@ -49,7 +49,7 @@
       "System.Text.Json.wasm": "sha256-/JoO9J79B7Phxwz1DZh9G9xEfEDJhB3SehnT2nyve3Y=",
       "System.Text.RegularExpressions.wasm": "sha256-6lTM5rK99dTveKD7N9enrJEr67CxhLZgBg3Jkk0mIgo=",
       "System.Private.CoreLib.wasm": "sha256-kCP2iGwhLVotzNyDMNwZWdLxHkg0GrPgBh9VAOjrohM=",
-      "CSE325_team7.wasm": "sha256-5DOuyPCrzbIjIL1oUVSOQ0vbApcjCdHmfIYTqN69MpA="
+      "CSE325_team7.wasm": "sha256-dcwQ2GuQWqy9pKPOioU2wYT6gIxUtXcezJ4MOMPqvjo="
     }
   },
   "cacheBootResources": true,
