@@ -24,11 +24,11 @@ jobs:
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll
 
+      - name: Fix base href for GitHub Pages
+        run: sed -i 's|<base href="/"/>|<base href="/CSE325-team7/"/>|g' release/wwwroot/index.html
+
       - name: Add 404.html for SPA routing
         run: cp release/wwwroot/index.html release/wwwroot/404.html
-
-      - name: Fix base href for GitHub Pages
-        run: sed -i 's|<base href="/"/>|<base href="/CSE325-team7/"/>|g' release/wwwroot/index.html release/wwwroot/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
