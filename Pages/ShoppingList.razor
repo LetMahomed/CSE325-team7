@@ -15,9 +15,21 @@
         <h2>Shopping List</h2>
 
         <div class="add-item-form">
-            <label>Add an item:</label>
-            <input type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" placeholder="Qty" />
-            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" placeholder="Item name" />
+            <label for="add-qty">Add an item:</label>
+            <input id="add-qty" type="number" min="1" value="@newItemQuantity" @oninput="UpdateNewItemQuantity" placeholder="Qty" aria-label="Quantity" />
+            <select @bind="newItemUnit" aria-label="Unit of measurement">
+                <option value="Count">Count</option>
+                <option value="Cup">Cup(s)</option>
+                <option value="Tablespoon">Tablespoon(s)</option>
+                <option value="Teaspoon">Teaspoon(s)</option>
+                <option value="Ounce">Ounce(s)</option>
+                <option value="Pound">Pound(s)</option>
+                <option value="Gram">Gram(s)</option>
+                <option value="Kilogram">Kilogram(s)</option>
+                <option value="Milliliter">Milliliter(s)</option>
+                <option value="Liter">Liter(s)</option>
+            </select>
+            <input type="text" value="@newItemName" @oninput="UpdateNewItemName" placeholder="Item name" aria-label="Item name" />
             <button class="btn-primary" type="button" @onclick="AddItem">Add</button>
         </div>
 
@@ -40,24 +52,21 @@
                 <thead>
                     <tr>
                         <th class="col-check"></th>
-                        <th class="col-num">#</th>
-                        <th class="col-qty">Qty</th>
-                        <th class="col-item">Item</th>
-                        <th class="col-req">Recipe Req.</th>
+                        <th class="col-qty" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("qty")' aria-label="Sort by quantity">Qty <span aria-hidden="true">@SortIcon("qty")</span></th>
+                        <th class="col-item" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("item")' aria-label="Sort by item name">Item <span aria-hidden="true">@SortIcon("item")</span></th>
+                        <th class="col-req" style="white-space:nowrap;cursor:pointer" @onclick='() => ToggleSort("req")' aria-label="Sort by recipe requirement">Recipe Req. <span aria-hidden="true">@SortIcon("req")</span></th>
                         <th class="col-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @{ var rowNum = 1; }
-                    @foreach (var item in shoppingList.ShoppingItems)
+                    @foreach (var item in SortedItems)
                     {
                         <tr @key="item" class="@(item.IsChecked ? "checked-row" : "")">
                             @if (editingItem == item)
                             {
                                 <td></td>
-                                <td>@rowNum</td>
-                                <td><input type="number" min="1" @bind="editItemQuantity" class="edit-input-qty" /></td>
-                                <td><input type="text" @bind="editItemName" class="edit-input-name" /></td>
+                                <td><input type="number" min="1" @bind="editItemQuantity" class="edit-input-qty" aria-label="Edit quantity" /></td>
+                                <td><input type="text" @bind="editItemName" class="edit-input-name" aria-label="Edit item name" /></td>
                                 <td></td>
                                 <td class="col-actions">
                                     <button class="btn-primary btn-sm" type="button" @onclick="SaveEdit">Save</button>
@@ -66,8 +75,7 @@
                             }
                             else
                             {
-                                <td class="col-check"><input type="checkbox" @bind="item.IsChecked" /></td>
-                                <td>@rowNum</td>
+                                <td class="col-check"><input type="checkbox" @bind="item.IsChecked" aria-label="Mark @item.Name as checked" /></td>
                                 <td>@item.Quantity</td>
                                 <td class="@(item.IsChecked ? "item-checked" : "")">@item.Name</td>
                                 <td class="recipe-req">@item.RecipeRequirement</td>
@@ -76,7 +84,6 @@
                                 </td>
                             }
                         </tr>
-                        rowNum++;
                     }
                 </tbody>
             </table>
@@ -85,35 +92,58 @@
 </div>
 
 @code {
-
+    // --- State ---
     ShoppingListData? shoppingList;
 
+    // Add item form state
     string newItemName = "";
     int newItemQuantity = 1;
+    string newItemUnit = "Count";          // Default unit for manually added items
     string statusMessage = "";
+
+    // Inline edit state
     ShoppingItem? editingItem = null;
     string editItemName = "";
     int editItemQuantity = 1;
 
+    // Sort state (defaults to alphabetical by item name)
+    string sortColumn = "item";
+    bool sortAscending = true;
+
+    /// <summary>
+    /// Loads shopping list from localStorage on page init.
+    /// Creates empty list if nothing saved.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        var savedJson = await JS.InvokeAsync<string?>(
-            "localStorage.getItem",
-            "shoppingList"
-        );
-
-        if (!string.IsNullOrWhiteSpace(savedJson))
+        try
         {
-            shoppingList = JsonSerializer.Deserialize<ShoppingListData>(savedJson) ?? new ShoppingListData();
-            shoppingList.ShoppingItems ??= new List<ShoppingItem>();
-            await NormalizeShoppingItemIds();
+            var savedJson = await JS.InvokeAsync<string?>(
+                "localStorage.getItem",
+                "shoppingList"
+            );
+
+            if (!string.IsNullOrWhiteSpace(savedJson))
+            {
+                shoppingList = JsonSerializer.Deserialize<ShoppingListData>(savedJson) ?? new ShoppingListData();
+                shoppingList.ShoppingItems ??= new List<ShoppingItem>();
+                await NormalizeShoppingItemIds();
+            }
+            else
+            {
+                shoppingList = new ShoppingListData();
+            }
         }
-        else
+        catch (Exception ex)
         {
             shoppingList = new ShoppingListData();
+            statusMessage = $"Failed to load shopping list: {ex.Message}";
         }
     }
 
+    /// <summary>
+    /// Removes all checked items from the list and persists changes.
+    /// </summary>
     async Task RemoveItems()
     {
         if (shoppingList == null)
@@ -128,6 +158,10 @@
         await SaveShoppingList();
     }
 
+    /// <summary>
+    /// Adds a new item or merges with existing item if name matches.
+    /// Count items set Qty = amount; other units always Qty = 1.
+    /// </summary>
     async Task AddItem()
     {
         var itemName = newItemName.Trim();
@@ -144,18 +178,39 @@
             return;
         }
 
-        shoppingList.ShoppingItems.Add(new ShoppingItem
+        var isCount = newItemUnit == "Count";
+        var existing = shoppingList.ShoppingItems
+            .FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+
+        if (existing != null)
         {
-            Id = shoppingList.ShoppingItems.Any()
-                ? shoppingList.ShoppingItems.Max(item => item.Id) + 1
-                : 1,
-            Name = itemName,
-            Quantity = newItemQuantity,
-            IsChecked = false
-        });
+            var parts = existing.RecipeRequirement.Split(' ', 2);
+            if (parts.Length == 2 && double.TryParse(parts[0], out var existingAmount))
+            {
+                var newTotal = existingAmount + newItemQuantity;
+                var unitName = parts[1];
+                existing.RecipeRequirement = $"{newTotal} {unitName}";
+                if (isCount)
+                    existing.Quantity = (int)newTotal;
+            }
+        }
+        else
+        {
+            shoppingList.ShoppingItems.Add(new ShoppingItem
+            {
+                Id = shoppingList.ShoppingItems.Any()
+                    ? shoppingList.ShoppingItems.Max(item => item.Id) + 1
+                    : 1,
+                Name = itemName,
+                Quantity = isCount ? newItemQuantity : 1,
+                IsChecked = false,
+                RecipeRequirement = $"{newItemQuantity} {(newItemQuantity == 1 ? newItemUnit : newItemUnit + "s")}"
+            });
+        }
 
         newItemName = "";
         newItemQuantity = 1;
+        newItemUnit = "Count";
         statusMessage = $"Added {itemName}.";
         StateHasChanged();
 
@@ -239,6 +294,9 @@
         await SaveShoppingList();
     }
 
+    /// <summary>
+    /// Persists the current shopping list to browser localStorage.
+    /// </summary>
     async Task SaveShoppingList()
     {
         if (shoppingList == null)
@@ -254,5 +312,44 @@
         {
             statusMessage = $"Item added, but browser storage failed: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Returns shopping items sorted by the active column and direction.
+    /// </summary>
+    IEnumerable<ShoppingItem> SortedItems
+    {
+        get
+        {
+            if (shoppingList == null) return Enumerable.Empty<ShoppingItem>();
+
+            return (sortColumn, sortAscending) switch
+            {
+                ("qty", true) => shoppingList.ShoppingItems.OrderBy(i => i.Quantity),
+                ("qty", false) => shoppingList.ShoppingItems.OrderByDescending(i => i.Quantity),
+                ("item", true) => shoppingList.ShoppingItems.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase),
+                ("item", false) => shoppingList.ShoppingItems.OrderByDescending(i => i.Name, StringComparer.OrdinalIgnoreCase),
+                ("req", true) => shoppingList.ShoppingItems.OrderBy(i => i.RecipeRequirement),
+                ("req", false) => shoppingList.ShoppingItems.OrderByDescending(i => i.RecipeRequirement),
+                _ => shoppingList.ShoppingItems.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+            };
+        }
+    }
+
+    void ToggleSort(string column)
+    {
+        if (sortColumn == column)
+            sortAscending = !sortAscending;
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+    }
+
+    string SortIcon(string column)
+    {
+        if (sortColumn != column) return "↕";
+        return sortAscending ? "▲" : "▼";
     }
 }

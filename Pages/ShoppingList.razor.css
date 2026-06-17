@@ -87,7 +87,7 @@
 }
 
 .recipe-req {
-    color: #999;
+    color: #595959;
     font-size: 0.9rem;
     font-style: italic;
 }
@@ -98,7 +98,7 @@
 
 .item-checked {
     text-decoration: line-through;
-    color: #999;
+    color: #595959;
 }
 
 .edit-input-qty {
@@ -112,6 +112,17 @@
 .btn-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.85rem;
+}
+
+.sortable {
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.sort-icon {
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
 }
 
 @media (max-width: 768px) {

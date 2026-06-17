@@ -130,6 +130,69 @@
     font-size: 0.85rem;
 }
 
+.recipe-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.recipe-form {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.recipe-form label {
+    display: block;
+    font-weight: 600;
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.recipe-form input,
+.recipe-form textarea {
+    width: 100%;
+}
+
+.recipe-form textarea {
+    resize: vertical;
+    font-family: var(--font-body);
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.form-error {
+    color: var(--color-red);
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.btn-danger {
+    background-color: #c1121f;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background-color: #9b0f1a;
+}
+
+.status-message {
+    color: var(--color-red);
+    font-weight: 600;
+    margin: 1rem 0;
+}
+
 @media (max-width: 768px) {
     .recipe-card {
         padding: 1rem;

@@ -1,38 +1,43 @@
+@* MainLayout.razor — Shared layout component rendered around all pages.
+   Provides the navbar with navigation links, hamburger menu for mobile,
+   and a search bar that navigates to /recipes?search=... *@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 
-<nav class="navbar">
-    <a class="brand" href="">🐀 Remy's Recipes</a>
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+    <a class="brand" href="" aria-label="Remy's Recipes Home">🐀 Remy's Recipes</a>
 
-    <button class="hamburger" type="button" @onclick="ToggleMenu">
+    <!-- Hamburger button: visible only on mobile (≤768px) -->
+    <button class="hamburger" type="button" @onclick="ToggleMenu" aria-label="Toggle navigation menu" aria-expanded="@menuOpen">
         ☰
     </button>
 
-    <div class="nav-links @(menuOpen ? "open" : "")">
-        <a href="/" @onclick="CloseMenu">Home</a>
-        <a href="/recipes" @onclick="CloseMenu">Recipes</a>
-        <a href="/shoppinglist" @onclick="CloseMenu">Shopping List</a>
+    <!-- Nav links collapse on mobile, expand when hamburger is toggled -->
+    <div class="nav-links @(menuOpen ? "open" : "")" role="menubar">
+        <a href="/" @onclick="CloseMenu" role="menuitem">Home</a>
+        <a href="/recipes" @onclick="CloseMenu" role="menuitem">Recipes</a>
+        <a href="/shoppinglist" @onclick="CloseMenu" role="menuitem">Shopping List</a>
 
-        <button class="search-icon" type="button" @onclick="ToggleSearch">
+        <button class="search-icon" type="button" @onclick="ToggleSearch" aria-label="Toggle search">
             🔍
         </button>
 
         @if (showSearch)
         {
-            <form class="nav-search" @onsubmit="SearchRecipes" @onsubmit:preventDefault>
-                <input type="text" placeholder="Search recipes..." @bind="searchText" />
+            <form class="nav-search" @onsubmit="SearchRecipes" @onsubmit:preventDefault role="search">
+                <input type="text" placeholder="Search recipes..." @bind="searchText" aria-label="Search recipes" />
             </form>
         }
     </div>
 </nav>
 
-<main class="content">
+<main class="content" role="main">
     @Body
 </main>
 
 @code {
-    bool showSearch = false;
-    bool menuOpen = false;
+    bool showSearch = false;   // Controls search input visibility
+    bool menuOpen = false;     // Controls mobile menu open/close state
     string searchText = "";
 
     void ToggleSearch()
@@ -45,11 +50,17 @@
         menuOpen = !menuOpen;
     }
 
+    /// <summary>
+    /// Closes the mobile menu (called when a nav link is clicked).
+    /// </summary>
     void CloseMenu()
     {
         menuOpen = false;
     }
 
+    /// <summary>
+    /// Navigates to the recipes page with a search query parameter.
+    /// </summary>
     void SearchRecipes()
     {
         var search = searchText.Trim();
